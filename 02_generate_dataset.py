@@ -56,6 +56,7 @@ def send_orders(orders_queue, instances, seed, query_expert_prob, time_limit, ou
 
     episode = 0
     while not stop_flag.is_set():
+      if not orders_queue.full():
         instance = rng.choice(instances)
         seed = rng.randint(2**32)
         orders_queue.put([episode, instance, seed, query_expert_prob, time_limit, out_dir])
@@ -97,7 +98,7 @@ def make_samples(in_queue, out_queue, stop_flag):
 
         env.seed(seed)
         observation, action_set, _, done, _ = env.reset(instance)
-        while not done:
+        while not done and not stop_flag.is_set():
             scores, scores_are_expert = observation["scores"]
             node_observation = observation["node_observation"]
             node_observation = (node_observation.row_features,
@@ -246,7 +247,7 @@ def collect_samples(instances, out_dir, rng, n_samples, n_jobs,
     # # stop all workers
     workers_stop_flag.set()
     for p in workers:
-        p.terminate()
+        p.join()
 
     print(f"Done collecting samples for {out_dir}")
     shutil.rmtree(tmp_samples_dir, ignore_errors=True)
