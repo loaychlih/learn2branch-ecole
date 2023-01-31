@@ -81,7 +81,8 @@ def make_samples(in_queue, out_queue, stop_flag):
         scip_parameters = {'separating/maxrounds': 0, 'presolving/maxrestarts': 0,
                            'limits/time': time_limit, 'timing/clocktype': 2}
         observation_function = { "scores": ExploreThenStrongBranch(expert_probability=query_expert_prob),
-                                 "node_observation": ecole.observation.NodeBipartite() }
+                                 "node_observation": ecole.observation.NodeBipartite(),
+                                 "khalil_observation": ecole.observation.Khalil2016() }
         env = ecole.environment.Branching(observation_function=observation_function,
                                           scip_params=scip_parameters, pseudo_candidates=True)
 
@@ -103,11 +104,12 @@ def make_samples(in_queue, out_queue, stop_flag):
                                 (node_observation.edge_features.indices,
                                  node_observation.edge_features.values),
                                 node_observation.column_features)
+            khalil_observation = observation["khalil_observation"]
 
             action = action_set[scores[action_set].argmax()]
 
             if scores_are_expert and not stop_flag.is_set():
-                data = [node_observation, action, action_set, scores]
+                data = [node_observation, khalil_observation, action, action_set, scores]
                 filename = f'{out_dir}/sample_{episode}_{sample_counter}.pkl'
 
                 with gzip.open(filename, 'wb') as f:
