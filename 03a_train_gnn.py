@@ -102,7 +102,7 @@ if __name__ == "__main__":
         'mknapsack': 'mknapsack/100_6',
     }
     problem_folder = problem_folders[args.problem]
-    running_dir = f"model/{args.problem}/{args.seed}"
+    running_dir = f"model/trained_models/{args.problem}/gnn"
     os.makedirs(running_dir, exist_ok=True)
 
     ### PYTORCH SETUP ###

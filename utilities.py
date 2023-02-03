@@ -65,7 +65,7 @@ class GraphDataset(torch_geometric.data.Dataset):
         with gzip.open(self.sample_files[index], 'rb') as f:
             sample = pickle.load(f)
 
-        sample_observation, sample_action, sample_action_set, sample_scores = sample['data']
+        sample_observation, _, sample_action, sample_action_set, sample_scores = sample['data']
 
         constraint_features, (edge_indices, edge_features), variable_features = sample_observation
         constraint_features = torch.FloatTensor(constraint_features)
