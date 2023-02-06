@@ -6,38 +6,40 @@ import utilities
 import pathlib
 import svmrank
 
-from utilities import log, load_flat_samples
+from utilities import log, FlatDataset
 
 
 def load_samples(filenames, size_limit, logfile=None):
-    x, y, ncands = [], [], []
-    total_ncands = 0
+  x, y, ncands = [], [], []
+  total_ncands = 0
 
-    for i, filename in enumerate(filenames):
-        cand_x, cand_y, best = load_flat_samples(filename)
+  data = FlatDataset(filenames)
 
-        x.append(cand_x)
-        y.append(cand_y)
-        ncands.append(cand_x.shape[0])
-        total_ncands += ncands[-1]
+  for i in range(len(filenames)):
+      cand_x, cand_y, _, best = data[i]
 
-        if (i + 1) % 100 == 0:
-            log(f"  {i+1}/{len(filenames)} files processed ({total_ncands} candidate variables)", logfile)
+      x.append(cand_x)
+      y.append(cand_y)
+      ncands.append(cand_x.shape[0])
+      total_ncands += ncands[-1]
 
-        if total_ncands >= size_limit:
-            log(f"  dataset size limit reached ({size_limit} candidate variables)", logfile)
-            break
+      if (i + 1) % 100 == 0:
+          log(f"  {i+1}/{len(filenames)} files processed ({total_ncands} candidate variables)", logfile)
 
-    x = np.concatenate(x)
-    y = np.concatenate(y)
-    ncands = np.asarray(ncands)
+      if total_ncands >= size_limit:
+          log(f"  dataset size limit reached ({size_limit} candidate variables)", logfile)
+          break
 
-    if total_ncands > size_limit:
-        x = x[:size_limit]
-        y = y[:size_limit]
-        ncands[-1] -= total_ncands - size_limit
+  x = np.concatenate(x)
+  y = np.concatenate(y)
+  ncands = np.asarray(ncands)
 
-    return x, y, ncands
+  if total_ncands > size_limit:
+      x = x[:size_limit]
+      y = y[:size_limit]
+      ncands[-1] -= total_ncands - size_limit
+
+  return x, y, ncands
 
 
 if __name__ == '__main__':
@@ -72,7 +74,7 @@ if __name__ == '__main__':
       'indset': 'indset/500_4',
   }
   problem_folder = problem_folders[args.problem]
-  running_dir = f"trained_models/{args.problem}/svmrank/{args.seed}"
+  running_dir = f"model/trained_models/{args.problem}/svmrank"
   os.makedirs(running_dir, exist_ok=True)
 
   # logging configuration #
