@@ -10,36 +10,32 @@ from utilities import log, FlatDataset
 
 
 def load_samples(filenames, size_limit, logfile=None):
-  x, y, ncands = [], [], []
+  x, y, n = [], [], []
   total_ncands = 0
 
   data = FlatDataset(filenames)
 
   for i in range(len(filenames)):
-      cand_x, cand_y, _, best = data[i]
+      cand_x, cand_y, _ = data[i]
+      ncands = cand_x.shape[0]
+
+      if total_ncands+ncands >= size_limit:
+        log(f"  dataset size limit reached ({total_ncands} candidate variables)", logfile)
+        break
 
       x.append(cand_x)
       y.append(cand_y)
-      ncands.append(cand_x.shape[0])
-      total_ncands += ncands[-1]
+      n.append(ncands)
+      total_ncands += ncands
 
       if (i + 1) % 100 == 0:
           log(f"  {i+1}/{len(filenames)} files processed ({total_ncands} candidate variables)", logfile)
 
-      if total_ncands >= size_limit:
-          log(f"  dataset size limit reached ({size_limit} candidate variables)", logfile)
-          break
-
   x = np.concatenate(x)
   y = np.concatenate(y)
-  ncands = np.asarray(ncands)
+  n = np.asarray(n)
 
-  if total_ncands > size_limit:
-      x = x[:size_limit]
-      y = y[:size_limit]
-      ncands[-1] -= total_ncands - size_limit
-
-  return x, y, ncands
+  return x, y, n
 
 
 if __name__ == '__main__':
@@ -105,7 +101,7 @@ if __name__ == '__main__':
 
   # save normalization parameters
   with open(f"{running_dir}/normalization.pkl", "wb") as f:
-      pickle.dump((x_shift, x_scale), f)
+    pickle.dump((x_shift, x_scale), f)
 
   log("Starting training", logfile)
 
@@ -123,9 +119,6 @@ if __name__ == '__main__':
           '-y': 0,
           '-l': 2,
       })
-      print(train_x.shape)
-      print(train_y.shape)
-      print(train_qids.shape)
       model.fit(train_x, train_y, train_qids)
       loss = model.loss(train_y, model(train_x, train_qids), train_qids)
       log(f"  training loss: {loss}", logfile)

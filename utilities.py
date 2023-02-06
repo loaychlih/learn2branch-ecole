@@ -16,19 +16,19 @@ def valid_seed(seed):
   return seed
 
 def log(str, logfile=None):
-    str = f'[{datetime.datetime.now()}] {str}'
-    print(str)
-    if logfile is not None:
-        with open(logfile, mode='a') as f:
-            print(str, file=f)
+  str = f'[{datetime.datetime.now()}] {str}'
+  print(str)
+  if logfile is not None:
+    with open(logfile, mode='a') as f:
+      print(str, file=f)
 
 
 def pad_tensor(input_, pad_sizes, pad_value=-1e8):
-    max_pad_size = pad_sizes.max()
-    output = input_.split(pad_sizes.cpu().numpy().tolist())
-    output = torch.stack([F.pad(slice_, (0, max_pad_size-slice_.size(0)), 'constant', pad_value)
-                          for slice_ in output], dim=0)
-    return output
+  max_pad_size = pad_sizes.max()
+  output = input_.split(pad_sizes.cpu().numpy().tolist())
+  output = torch.stack([F.pad(slice_, (0, max_pad_size-slice_.size(0)), 'constant', pad_value)
+                        for slice_ in output], dim=0)
+  return output
 
 
 class BipartiteNodeData(torch_geometric.data.Data):
@@ -98,7 +98,8 @@ class FlatDataset(torch.utils.data.Dataset):
 
     cands = np.array(cands)
     cand_scores = np.array(scores[cands])
-    cand_states = np.array(khalil_state)
+    cand_states = np.array(khalil_state[:,:-24]) # TO DO!! Fix nan bug !!
+    cand_states_copy = cand_states
     best_cand_idx = np.where(cands == best_cand)[0][0]
 
     # add interactions to state
@@ -114,13 +115,32 @@ class FlatDataset(torch.utils.data.Dataset):
     max_val[max_val == 0] = 1
     cand_states /= max_val
 
+    m = np.mean(cand_states, axis=0)
+    for e in m:
+      if not e<=1.0:
+        for feat in np.mean(cand_states_copy, axis=0):
+          print(feat)
+        assert(0)
+
     # scores quantile discretization as in
     cand_labels = np.empty(len(cand_scores), dtype=int)
     cand_labels[cand_scores >= 0.8 * cand_scores.max()] = 1
     cand_labels[cand_scores < 0.8 * cand_scores.max()] = 0
 
-    return cand_states, cand_labels, cand_scores, best_cand_idx
+    return cand_states, cand_labels, best_cand_idx
 
+  def collate(batch):
+    num_candidates = [item[0].shape[0] for item in batch]
+    num_candidates = torch.LongTensor(num_candidates)
+
+    # batch states #
+    batched_states = [item[0] for item in batch]
+    batched_states = np.concatenate(batched_states, axis=0)
+    # batch targets #
+    batched_best = [[item[2]] for item in batch]
+    batched_best = torch.LongTensor(batched_best)
+
+    return [batched_states, batched_best, num_candidates]
 
 class Scheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
     def __init__(self, optimizer, **kwargs):
