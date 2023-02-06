@@ -83,6 +83,45 @@ class GraphDataset(torch_geometric.data.Dataset):
         return graph
 
 
+class FlatDataset(torch.utils.data.Dataset):
+  def __init__(self, filenames):
+    self.filenames = filenames
+
+  def __len__(self):
+    return len(self.filenames)
+
+  def __getitem__(self, idx):
+    with gzip.open(self.filenames[idx], 'rb') as file:
+      sample = pickle.load(file)
+
+    _, khalil_state, best_cand, cands, scores = sample['data']
+
+    cands = np.array(cands)
+    cand_scores = np.array(scores[cands])
+    cand_states = np.array(khalil_state)
+    best_cand_idx = np.where(cands == best_cand)[0][0]
+
+    # add interactions to state
+    interactions = (
+        np.expand_dims(cand_states, axis=-1) * \
+        np.expand_dims(cand_states, axis=-2)
+    ).reshape((cand_states.shape[0], -1))
+    cand_states = np.concatenate([cand_states, interactions], axis=1)
+
+    # normalize to state
+    cand_states -= cand_states.min(axis=0, keepdims=True)
+    max_val = cand_states.max(axis=0, keepdims=True)
+    max_val[max_val == 0] = 1
+    cand_states /= max_val
+
+    # scores quantile discretization as in
+    cand_labels = np.empty(len(cand_scores), dtype=int)
+    cand_labels[cand_scores >= 0.8 * cand_scores.max()] = 1
+    cand_labels[cand_scores < 0.8 * cand_scores.max()] = 0
+
+    return cand_states, cand_labels, cand_scores, best_cand_idx
+
+
 class Scheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
     def __init__(self, optimizer, **kwargs):
         super().__init__(optimizer, **kwargs)
@@ -104,37 +143,3 @@ class Scheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
         self._last_lr = [group['lr'] for group in self.optimizer.param_groups]
 
 
-def load_flat_samples(filename):
-    with gzip.open(filename, 'rb') as file:
-        sample = pickle.load(file)
-
-    _, khalil_state, best_cand, cands, scores = sample['data']
-
-    cands = np.array(cands)
-    cand_scores = np.array(scores[cands])
-    cand_states = np.array(khalil_state)
-    best_cand_idx = np.where(cands == best_cand)[0][0]
-
-    print(cand_states.shape)
-    print(cand_scores.shape)
-    print(" ~~ ")
-
-    # add interactions to state
-    interactions = (
-        np.expand_dims(cand_states, axis=-1) * \
-        np.expand_dims(cand_states, axis=-2)
-    ).reshape((cand_states.shape[0], -1))
-    cand_states = np.concatenate([cand_states, interactions], axis=1)
-
-    # normalize to state
-    cand_states -= cand_states.min(axis=0, keepdims=True)
-    max_val = cand_states.max(axis=0, keepdims=True)
-    max_val[max_val == 0] = 1
-    cand_states /= max_val
-
-    # scores quantile discretization as in
-    cand_labels = np.empty(len(cand_scores), dtype=int)
-    cand_labels[cand_scores >= 0.8 * cand_scores.max()] = 1
-    cand_labels[cand_scores < 0.8 * cand_scores.max()] = 0
-
-    return cand_states, cand_labels, best_cand_idx
