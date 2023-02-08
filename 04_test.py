@@ -86,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument(
         'model',
         help='Model to test.',
-        choices=['svmrank', 'gcnn'],
+        choices=['svmrank', 'gnn'],
     )
     parser.add_argument(
         '-g', '--gpu',
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     if os.path.exists(logfile):
         os.remove(logfile)
 
-    if args.model == "gcnn":
+    if args.model == "gnn":
       ## pytorch setup ##
       if args.gpu == -1:
           os.environ['CUDA_VISIBLE_DEVICES'] = ''
