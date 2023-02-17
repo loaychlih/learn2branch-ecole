@@ -99,7 +99,6 @@ class FlatDataset(torch.utils.data.Dataset):
     cands = np.array(cands)
     cand_scores = np.array(scores[cands])
     cand_states = np.array(khalil_state[:,:-24]) # TO DO!! Fix nan bug !!
-    cand_states_copy = cand_states
     best_cand_idx = np.where(cands == best_cand)[0][0]
 
     # add interactions to state
@@ -114,13 +113,6 @@ class FlatDataset(torch.utils.data.Dataset):
     max_val = cand_states.max(axis=0, keepdims=True)
     max_val[max_val == 0] = 1
     cand_states /= max_val
-
-    m = np.mean(cand_states, axis=0)
-    for e in m:
-      if not e<=1.0:
-        for feat in np.mean(cand_states_copy, axis=0):
-          print(feat)
-        assert(0)
 
     # scores quantile discretization as in
     cand_labels = np.empty(len(cand_scores), dtype=int)
