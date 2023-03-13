@@ -44,7 +44,7 @@ class BipartiteNodeData(torch_geometric.data.Data):
         self.candidate_choices = candidate_choice
         self.candidate_scores = candidate_scores
 
-    def __inc__(self, key, value, store, *args, **kwargs):
+    def __inc__(self, key, value, *args, **kwargs):
         if key == 'edge_index':
             return torch.tensor([[self.constraint_features.size(0)], [self.variable_features.size(0)]])
         elif key == 'candidates':
@@ -98,7 +98,8 @@ class FlatDataset(torch.utils.data.Dataset):
 
     cands = np.array(cands)
     cand_scores = np.array(scores[cands])
-    cand_states = np.array(khalil_state[:,:-24]) # TO DO!! Fix nan bug !!
+    cand_states = np.array(khalil_state[:,:24]) # TO DO!! Fix nan bug !
+    #cand_states[cand_states > 1e8] = 1e8
     best_cand_idx = np.where(cands == best_cand)[0][0]
 
     # add interactions to state
@@ -107,7 +108,7 @@ class FlatDataset(torch.utils.data.Dataset):
         np.expand_dims(cand_states, axis=-2)
     ).reshape((cand_states.shape[0], -1))
     cand_states = np.concatenate([cand_states, interactions], axis=1)
-
+ 
     # normalize to state
     cand_states -= cand_states.min(axis=0, keepdims=True)
     max_val = cand_states.max(axis=0, keepdims=True)

@@ -146,11 +146,14 @@ if __name__ == "__main__":
     train_files = [str(file) for file in (pathlib.Path(f'data/samples')/problem_folder/'train').glob('sample_*.pkl')]
     pretrain_files = [f for i, f in enumerate(train_files) if i % 10 == 0]
     valid_files = [str(file) for file in (pathlib.Path(f'data/samples')/problem_folder/'valid').glob('sample_*.pkl')]
+    test_files = [str(file) for file in (pathlib.Path(f'data/samples')/problem_folder/'test').glob('sample_*.pkl')]
 
     pretrain_data = GraphDataset(pretrain_files)
-    pretrain_loader = torch_geometric.loader.DataLoader(pretrain_data, pretrain_batch_size, shuffle=False)
+    pretrain_loader = torch_geometric.data.DataLoader(pretrain_data, pretrain_batch_size, shuffle=False)
     valid_data = GraphDataset(valid_files)
-    valid_loader = torch_geometric.loader.DataLoader(valid_data, valid_batch_size, shuffle=False)
+    valid_loader = torch_geometric.data.DataLoader(valid_data, valid_batch_size, shuffle=False)
+    test_data = GraphDataset(test_files)
+    test_loader = torch_geometric.data.DataLoader(test_data, valid_batch_size, shuffle=False)
 
     for epoch in range(max_epochs + 1):
         log(f"EPOCH {epoch}...", logfile)
@@ -164,7 +167,7 @@ if __name__ == "__main__":
             train_loss, train_kacc, entropy = process(policy, train_loader, top_k, optimizer)
             log(f"TRAIN LOSS: {train_loss:0.3f} " + "".join([f" acc@{k}: {acc:0.3f}" for k, acc in zip(top_k, train_kacc)]), logfile)
 
-        # TEST
+        # VALIDATE
         valid_loss, valid_kacc, entropy = process(policy, valid_loader, top_k, None)
         log(f"VALID LOSS: {valid_loss:0.3f} " + "".join([f" acc@{k}: {acc:0.3f}" for k, acc in zip(top_k, valid_kacc)]), logfile)
 
