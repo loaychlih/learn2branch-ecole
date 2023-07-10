@@ -33,24 +33,24 @@ def pad_tensor(input_, pad_sizes, pad_value=-1e8):
 
 class BipartiteNodeData(torch_geometric.data.Data):
     def __init__(self, constraint_features, edge_indices, edge_features, variable_features,
-                 candidates, nb_candidates, candidate_choice, candidate_scores):
+                 candidates, candidate_choice, candidate_scores):
         super().__init__()
         self.constraint_features = constraint_features
         self.edge_index = edge_indices
         self.edge_attr = edge_features
         self.variable_features = variable_features
         self.candidates = candidates
-        self.nb_candidates = nb_candidates
+        self.nb_candidates = len(candidates)
         self.candidate_choices = candidate_choice
         self.candidate_scores = candidate_scores
 
-    def __inc__(self, key, value, *args, **kwargs):
+    def __inc__(self, key, value):
         if key == 'edge_index':
             return torch.tensor([[self.constraint_features.size(0)], [self.variable_features.size(0)]])
         elif key == 'candidates':
             return self.variable_features.size(0)
         else:
-            return super().__inc__(key, value, *args, **kwargs)
+            return super().__inc__(key, value)
 
 
 class GraphDataset(torch_geometric.data.Dataset):
@@ -78,7 +78,7 @@ class GraphDataset(torch_geometric.data.Dataset):
         candidate_scores = torch.FloatTensor([sample_scores[j] for j in candidates])
 
         graph = BipartiteNodeData(constraint_features, edge_indices, edge_features, variable_features,
-                                  candidates, len(candidates), candidate_choice, candidate_scores)
+                                  candidates, candidate_choice, candidate_scores)
         graph.num_nodes = constraint_features.shape[0]+variable_features.shape[0]
         return graph
 
