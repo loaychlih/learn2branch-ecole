@@ -156,3 +156,46 @@ class Scheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
         self._last_lr = [group['lr'] for group in self.optimizer.param_groups]
 
 
+def plot_training_curve(filename):
+    import matplotlib.pyplot as plt 
+    
+    train_loss = []
+    valid_loss = []
+    train_acc = {1: [], 3: [], 5: [], 10: []}
+    valid_acc = {1: [], 3: [], 5: [], 10: []}
+
+    with open(filename, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            line = line[:-1]
+            line = line.split(' ')
+
+            if line[2] == "TRAIN":
+                train_loss.append(float(line[4]))
+                train_acc[1].append(float(line[7]))
+                train_acc[3].append(float(line[9]))
+                train_acc[5].append(float(line[11]))
+                train_acc[10].append(float(line[13]))
+            if line[2] == "VALID":
+                valid_loss.append(float(line[4]))
+                valid_acc[1].append(float(line[7]))
+                valid_acc[3].append(float(line[9]))
+                valid_acc[5].append(float(line[11]))
+                valid_acc[10].append(float(line[13]))
+
+    # plot loss #
+    plt.plot(train_loss, color='darkslateblue', label='Train')
+    plt.plot(valid_loss, color='peru', label='Validation')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
+    plt.clf()
+
+    # plot accuracy #
+    plt.plot(train_acc[5], color='darkslateblue', label='Train')
+    plt.plot(valid_acc[5], color='peru', label='Validation')
+    plt.xlabel('Epoch')
+    plt.ylabel('Acc@5')
+    plt.legend()
+    plt.show()
