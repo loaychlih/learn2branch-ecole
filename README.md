@@ -23,7 +23,7 @@ Our recommended installation uses the [Conda package manager](https://docs.conda
 __Instructions:__ Install Ecole, Pytorch and Pytorch Geometric using conda. At the time of writing these installation instructions, this can be accomplished by running:
 
 ```
-conda install ecole
+conda install -c conda-forge scip=8.0.0 or conda install conda-forge/label/ecole_dev::ecole
 conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 conda install pyg -c pyg -c conda-forge
 ```
